@@ -1,7 +1,6 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, Image, Animated } from "react-native";
-import { styles } from "./styles";
-import { theme } from "@/configs/theme";
+import { Text, Image, Animated, StyleSheet } from "react-native";
+import { onBoardingTheme } from "@/constants/Theme";
 import LargeButton from "@/components/LargeButton/LargeButton";
 import { useAppSelector } from "@/store/store";
 import { useNavigation } from "@react-navigation/native";
@@ -9,7 +8,7 @@ import { useNavigation } from "@react-navigation/native";
 const SplashScreen = () => {
   const navigation = useNavigation();
   const currentTheme =
-    theme[useAppSelector((state) => state.theme.currentTheme)];
+    onBoardingTheme[useAppSelector((state) => state.theme.currentTheme)];
   const [isReady, setIsReady] = React.useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -52,5 +51,36 @@ const SplashScreen = () => {
     </Animated.View>
   );
 };
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontFamily: "OpenSans_700Bold",
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontFamily: "OpenSans_400Regular",
+    textAlign: "center",
+    marginHorizontal: 20,
+    marginBottom: 20,
+  },
+  footer: {
+    fontSize: 12,
+    fontFamily: "OpenSans_400Regular",
+    position: "absolute",
+    bottom: 20,
+  },
+});
 
 export default SplashScreen;

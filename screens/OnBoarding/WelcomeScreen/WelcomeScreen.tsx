@@ -1,15 +1,14 @@
 import React from "react";
-import { View, Text, Image, useColorScheme } from "react-native";
-import { theme } from "@/configs/theme";
+import { View, Text, Image, StyleSheet } from "react-native";
+import { onBoardingTheme } from "@/constants/Theme";
 import LargeButton from "@/components/LargeButton/LargeButton";
-import { styles } from "./styles";
 import { useNavigation } from "@react-navigation/native";
 import { useAppSelector } from "@/store/store";
 
 const WelcomeScreen = () => {
   const navigation = useNavigation();
   const currentTheme =
-    theme[useAppSelector((state) => state.theme.currentTheme)];
+    onBoardingTheme[useAppSelector((state) => state.theme.currentTheme)];
 
   return (
     <View
@@ -40,5 +39,36 @@ const WelcomeScreen = () => {
   );
 };
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  logo: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontFamily: "OpenSans_700Bold",
+    marginBottom: 10,
+  },
+  subtitle: {
+    fontSize: 16,
+    fontFamily: "OpenSans_400Regular",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  description: {
+    fontSize: 14,
+    fontFamily: "OpenSans_400Regular",
+    textAlign: "center",
+    marginHorizontal: 20,
+    marginBottom: 40,
+  },
+});
+
 export default WelcomeScreen;
-``;

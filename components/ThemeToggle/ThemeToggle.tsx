@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Switch, StyleSheet } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
-import { toggleTheme } from "@/configs/theme";
+import { toggleTheme } from "@/constants/Theme";
 import { RootState } from "@/store/store";
 
 const ThemeToggle: React.FC = () => {

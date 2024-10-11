@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,14 +6,14 @@ import {
   KeyboardAvoidingView,
   Platform,
   StatusBar,
+  StyleSheet,
 } from "react-native";
 import InputField from "@/components/InputField/InputField";
 import LargeButton from "@/components/LargeButton/LargeButton";
+import Layout from "@/constants/Layout";
 import { useNavigation } from "@react-navigation/native";
-import { theme } from "@/configs/theme";
+import { onBoardingTheme } from "@/constants/Theme";
 import { useAppSelector } from "@/store/store";
-
-import { styles } from "./styles";
 
 const LoginScreen: React.FC = () => {
   const images = [
@@ -31,7 +31,7 @@ const LoginScreen: React.FC = () => {
 
   const navigation: any = useNavigation();
   const currentTheme =
-    theme[useAppSelector((state) => state.theme.currentTheme)];
+    onBoardingTheme[useAppSelector((state) => state.theme.currentTheme)];
 
   useState(() => {
     const randomIndex = Math.floor(Math.random() * images.length);
@@ -126,5 +126,38 @@ const LoginScreen: React.FC = () => {
     </>
   );
 };
+
+const styles = StyleSheet.create({
+  backgroundImage: {
+    width: Layout.window.width,
+    height: Layout.window.height,
+  },
+  container: {
+    flex: 1,
+    width: Layout.window.width,
+  },
+  logoContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  overlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+  },
+  loginContainer: {
+    alignItems: "center",
+    height: Layout.window.height * 0.6,
+    padding: 10,
+    borderTopLeftRadius: 10,
+    borderTopRightRadius: 10,
+  },
+  loginText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 20,
+    fontFamily: "OpenSans_400Regular",
+  },
+});
 
 export default LoginScreen;

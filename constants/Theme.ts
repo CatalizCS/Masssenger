@@ -1,6 +1,8 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+const tintColorLight = "#2f95dc";
+const tintColorDark = "#fff";
 
-export const theme = {
+export const onBoardingTheme = {
   dark_theme: {
     background: "#121212",
     primary: "#FFFFFF",
@@ -16,6 +18,23 @@ export const theme = {
     button_primary: "#1A73E8",
     button_secondary: "#B0B0B0",
     input: "#F1F1F1",
+  },
+};
+
+export const HomeTheme = {
+  light_theme: {
+    text: "#000",
+    background: "#fff",
+    tint: tintColorLight,
+    tabIconDefault: "#ccc",
+    tabIconSelected: tintColorLight,
+  },
+  dark_theme: {
+    text: "#fff",
+    background: "#000",
+    tint: tintColorDark,
+    tabIconDefault: "#ccc",
+    tabIconSelected: tintColorDark,
   },
 };
 

@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from "react";
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
-import { theme } from "@/configs/theme";
+import { onBoardingTheme } from "@/constants/Theme";
 import { useAppSelector } from "@/store/store";
 
 const ResendOTP: React.FC = () => {
   const currentTheme =
-    theme[useAppSelector((state) => state.theme.currentTheme)];
+    onBoardingTheme[useAppSelector((state) => state.theme.currentTheme)];
   const [countdown, setCountdown] = useState(60);
 
   // add cowndown timer

@@ -1,13 +1,13 @@
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { theme, ThemeType } from "@/configs/theme";
+import { onBoardingTheme, ThemeType } from "@/constants/Theme";
 
 export const useTheme = () => {
   const currentTheme = useSelector(
     (state: RootState) => state.theme.currentTheme
   );
   return {
-    ...theme[currentTheme],
+    ...onBoardingTheme[currentTheme],
     fontFamily: "OpenSans_400Regular",
   };
 };

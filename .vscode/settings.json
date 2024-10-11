@@ -2,6 +2,7 @@
     "files.exclude": {
         ".expo": true,
         ".vscode": true,
+        "assets": true,
         "node_modules": true,
         "package-lock.json": true
     }

@@ -3,7 +3,7 @@ import {
   showErrorToast,
   showSuccessToast,
 } from "@/components/ToastMessage/Toast";
-import { theme } from "@/configs/theme";
+import { onBoardingTheme } from "@/constants/Theme";
 import { auth } from "@/firebase/firebase.config";
 import { codeToMessage } from "@/firebase/firebase.handleError";
 import { useAppSelector } from "@/store/store";
@@ -17,7 +17,7 @@ interface PasswordInputProps {
 
 const PasswordInput: React.FC<PasswordInputProps> = ({ usernameString }) => {
   const currentTheme =
-    theme[useAppSelector((state) => state.theme.currentTheme)];
+    onBoardingTheme[useAppSelector((state) => state.theme.currentTheme)];
   const [password, setPassword] = useState("");
 
   async function login(passwordString: string) {

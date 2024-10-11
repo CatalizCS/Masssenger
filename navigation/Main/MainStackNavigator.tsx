@@ -8,6 +8,7 @@ import SplashScreen from "@/screens/OnBoarding/SplashScreen/SpashScreen";
 import WelcomeScreen from "@/screens/OnBoarding/WelcomeScreen/WelcomeScreen";
 import LoginScreen from "@/screens/Registration/AuthenticationScreen/LoginScreen/LoginScreen";
 import PasswordVerifyScreen from "@/screens/Registration/AuthenticationScreen/PasswordScreen/PasswordVerifyScreen";
+// import HomeTabNavigator from "../Home/HomeTabNavigator";
 
 const Stack = createStackNavigator();
 
@@ -58,7 +59,13 @@ const MainStackNavigator: React.FC = () => {
     >
       <Stack.Navigator initialRouteName={user ? "Home" : "Onboarding"}>
         {user ? (
-          <></>
+          <>
+          {/* <Stack.Screen
+            name="Home"
+            component={HomeTabNavigator}
+            options={{ headerShown: false }}
+          /> */}
+          </>
         ) : (
           <>
             <Stack.Screen

@@ -4,12 +4,12 @@ import { styles } from "./styles";
 
 import PasswordInput from "./PasswordInput";
 import RestorePassword from "./RestorePassword";
-import { theme } from "@/configs/theme";
+import { onBoardingTheme } from "@/constants/Theme";
 import { useAppSelector } from "@/store/store";
 
 const PasswordVerifyScreen: React.FC<any> = (navigation) => {
   const currentTheme =
-    theme[useAppSelector((state) => state.theme.currentTheme)];
+    onBoardingTheme[useAppSelector((state) => state.theme.currentTheme)];
 
   const { usernameString } = navigation.route.params;
 

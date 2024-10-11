@@ -1,6 +1,5 @@
 import React from "react";
-import { Text, TouchableOpacity } from "react-native";
-import { styles } from "./styles";
+import { Text, TouchableOpacity, StyleSheet } from "react-native";
 
 interface ButtonProps {
   title: string;
@@ -24,5 +23,20 @@ const LargeButton: React.FC<ButtonProps> = ({ title, onPress, theme }) => {
     </TouchableOpacity>
   );
 };
+
+const styles = StyleSheet.create({
+  button: {
+    width: "85%",
+    paddingVertical: 15,
+    borderRadius: 25,
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontFamily: "OpenSans_700Bold",
+  },
+});
 
 export default LargeButton;
