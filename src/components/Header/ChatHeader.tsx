@@ -1,59 +1,77 @@
 import React from "react";
-import { View, Image, TouchableOpacity, StyleSheet, Text } from "react-native";
+import { View, Text, Image, StyleSheet } from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { Chat } from "@/src/types/Message";
+import { useNavigation } from "@react-navigation/native";
 
-const HeaderSection: React.FC<any> = ({ avatarUri, username }) => (
-  <View style={styles.container}>
-    <Image source={{ uri: avatarUri }} style={styles.image} />
-    <Text style={styles.name}>{username}</Text>
-    <Text style={styles.text}>Facebook</Text>
-    <Text style={styles.textSecondary}>You're friends on Facebook</Text>
-    <Text style={styles.textSecondary}>
-      Primus to the King of Kandor in Krypton
-    </Text>
-    <Text style={styles.textSecondary}>Fighter from the El's family</Text>
-    <TouchableOpacity style={styles.button}>
-      <Text style={styles.buttonText}>VIEW PROFILE</Text>
-    </TouchableOpacity>
-    <Text style={styles.date}>JAN 05 2021 AT 4:45PM</Text>
-  </View>
-);
+interface ChatHeaderProps {
+  chat: Chat;
+}
+
+const ChatHeader: React.FC<ChatHeaderProps> = ({ chat }) => {
+  const navigation = useNavigation();
+  return (
+    <View style={styles.header}>
+      <Ionicons
+        name="chevron-back"
+        size={30}
+        color="purple"
+        onPress={() => {
+          navigation.goBack();
+        }}
+      />
+      <View style={styles.headerContent}>
+        <Image source={{ uri: chat.avatarUrl }} style={styles.avatar} />
+        <View>
+          <Text style={styles.name}>{chat.chatName}</Text>
+          <Text style={styles.status}>
+            {chat.isGroupChat
+              ? `${chat.participants.length} participants`
+              : "Active 6h ago"}
+          </Text>
+        </View>
+      </View>
+      <View style={{ flexDirection: "row" }}>
+        <Ionicons
+          name="call"
+          size={30}
+          style={{ paddingRight: 20 }}
+          color="purple"
+        />
+        <Ionicons name="videocam" size={30} color="purple" />
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
-  container: {
-    marginTop: 20,
-    justifyContent: "center",
+  header: {
+    flexDirection: "row",
     alignItems: "center",
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
   },
-  image: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+  headerContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    marginLeft: 10,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
   },
   name: {
-    fontSize: 22,
     fontWeight: "bold",
-    paddingHorizontal: 10,
+    fontSize: 16,
   },
-  text: {
-    fontSize: 18,
-  },
-  textSecondary: {
-    fontSize: 18,
-    color: "#4d4d4d",
-  },
-  button: {
-    backgroundColor: "#4d4d4d",
-    borderRadius: 20,
-    padding: 10,
-    marginVertical: 10,
-  },
-  buttonText: {
-    color: "#fff",
-  },
-  date: {
-    fontSize: 18,
-    color: "#4d4d4d",
+  status: {
+    fontSize: 12,
+    color: "gray",
   },
 });
 
-export default HeaderSection;
+export default ChatHeader;

@@ -1,59 +1,176 @@
-import React, { useState } from "react";
-import { SafeAreaView, View, Text, TouchableOpacity } from "react-native";
+import React, { useContext, useState, useCallback, useEffect } from "react";
+import {
+  Image,
+  SafeAreaView,
+  View,
+  Text,
+  TouchableOpacity,
+} from "react-native";
 import { SvgXml } from "react-native-svg";
-
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
-import Ionicons from "react-native-vector-icons/Ionicons";
-
 import Button from "@/src/components/Button/Button";
 import InputField from "@/src/components/Input/InputField";
 import { onBoardingTheme } from "@/src/contexts/Theme";
 import { useAppSelector } from "@/src/stores/Theme";
-import Layout from "@/src/contexts/Layout";
-import { AuthError, sendPasswordResetEmail } from "firebase/auth";
-import { codeToMessage } from "@/src/firebase/HandleError";
-import { auth } from "@/src/firebase/firebase";
+import { storage } from "@/src/firebase/firebase";
 import { showErrorToast, showSuccessToast } from "@/src/components/Toast/Toast";
+import { DateTimePickerAndroid } from "@react-native-community/datetimepicker";
+import * as ImagePicker from "expo-image-picker";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { RegistrationContext } from "@/src/contexts/RegistrationContext";
+import { Profile } from "@/src/types/Profile";
+import { updateProfile } from "@/src/firebase/Services/Profile";
+import Layout from "@/src/contexts/Layout";
 
-const ForgotScreen: React.FC<any> = ({ navigation }) => {
+const NewAccountScreen: React.FC<any> = ({ navigation }) => {
   const currentTheme =
     onBoardingTheme[useAppSelector((state) => state.theme.currentTheme)];
+  const { user, userInfo, setUserInfo } = useContext(RegistrationContext);
+  const [formData, setFormData] = useState({
+    email: "",
+    firstName: "",
+    lastName: "",
+    birthday: "",
+    avatar: "",
+  });
+  const [isUploading, setIsUploading] = useState(false);
 
-  const [email, setEmail] = useState("");
-
-  const handleForgotPassword = async () => {
-    if (email === "") {
-      showErrorToast("Username hoặc email không được để trống");
-      return;
+  useEffect(() => {
+    if (userInfo) {
+      navigation.reset({ index: 0, routes: [{ name: "Home" as never }] });
+      navigation.addListener(
+        "beforeRemove",
+        (e: { preventDefault: () => void }) => {
+          e.preventDefault();
+        }
+      );
     }
+  }, [userInfo]);
 
-    // checking if the email format is correct
-    const emailPattern = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
-    if (emailPattern.test(email)) {
-      showErrorToast("Username hoặc email không hợp lệ");
-      return true;
+  const handleInputChange = (field: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleEmailChange = (text: string) => {
+    if (!text) {
+      handleInputChange("email", text);
+      return showErrorToast("Vui lòng nhập email");
     }
-
-    // checking if the username format is correct
-    const usernamePattern = /^[a-zA-Z0-9._-]{3,}$/;
-    if (!usernamePattern.test(email)) {
-      showErrorToast("Username hoặc email không hợp lệ");
-      return false;
-    }
-
-    try {
-      const finalUsername = email.includes("@") ? email : email + "@tamais.me";
-
-      await sendPasswordResetEmail(auth, finalUsername);
-      showSuccessToast("Vui lòng kiểm tra email để đặt lại mật khẩu");
-
-      navigation.navigate("Login" as never);
-    } catch (error) {
-      const errorCode = (error as AuthError).code;
-      const errorMessage = codeToMessage(errorCode);
-      showErrorToast(errorMessage);
+    if (text.includes("@") && text.includes(".")) {
+      handleInputChange("email", text);
+    } else {
+      handleInputChange("email", text);
+      showErrorToast("Email không hợp lệ");
     }
   };
+
+  const showDatePicker = useCallback(async () => {
+    try {
+      DateTimePickerAndroid.open({
+        mode: "date",
+        maximumDate: new Date(),
+        value: new Date(),
+        onChange: (event, selectedDate) => {
+          if (event.type === "set" && selectedDate) {
+            // if selected day less than 10 years old
+            const currentDate = new Date();
+            const selectedYear = selectedDate.getFullYear();
+            const currentYear = currentDate.getFullYear();
+
+            if (currentYear - selectedYear < 10) {
+              return showErrorToast("Bruhh, bạn thật sự dưới 10 tuổi à?");
+            }
+
+            const formattedDate = `${selectedDate
+              .getDate()
+              .toString()
+              .padStart(2, "0")}/${(selectedDate.getMonth() + 1)
+              .toString()
+              .padStart(2, "0")}/${selectedDate.getFullYear()}`;
+            handleInputChange("birthday", formattedDate);
+          }
+        },
+      });
+    } catch (e) {
+      showErrorToast("Đã có lỗi xảy ra, vui lòng thử lại sau");
+    }
+  }, []);
+
+  const handleAvatarUpload = useCallback(async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      return showErrorToast(
+        "Ứng dụng cần quyền truy cập để cập nhật ảnh đại diện."
+      );
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    });
+
+    setIsUploading(true);
+    try {
+      if (!result.canceled && result.assets?.length > 0) {
+        const uri = result.assets[0].uri;
+        const response = await fetch(uri);
+        const storageRef = ref(storage, `avatars/${user?.uid}`);
+        const snapshot = await uploadBytes(storageRef, await response.blob());
+
+        // get the download url
+        const downloadUrl = await getDownloadURL(snapshot.ref);
+        console.log("Download URL:", downloadUrl);
+        if (downloadUrl) {
+          handleInputChange("avatar", downloadUrl);
+        }
+
+        showSuccessToast("Đã cập nhật ảnh đại diện");
+      }
+    } catch (error) {
+      showErrorToast("Không thể cập nhật ảnh đại diện");
+      console.error("Error uploading avatar:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  }, [user]);
+
+  const handleUpdateProfile = useCallback(async () => {
+    const { email, firstName, lastName, birthday, avatar } = formData;
+
+    if (!email.includes("@") && !email.includes(".")) {
+      return showErrorToast("Email không hợp lệ");
+    }
+
+    const profile: Profile = {
+      userId: user?.uid || "",
+      email,
+      firstName,
+      lastName,
+      birthday,
+      avatarUrl: avatar,
+      lastSeen: new Date().toISOString(),
+      isOnline: true,
+      note: "",
+      friends: [] as Profile[],
+    };
+
+    if (
+      !profile.email ||
+      !profile.firstName ||
+      !profile.lastName ||
+      !profile.birthday ||
+      !profile.avatarUrl
+    ) {
+      return showErrorToast("Vui lòng điền đầy đủ thông tin");
+    }
+
+    setUserInfo(profile);
+    await updateProfile(profile.userId, profile);
+    showSuccessToast("Đã cập nhật thông tin cá nhân");
+    navigation.navigate("Home" as never);
+  }, [formData, setUserInfo, user]);
 
   return (
     <SafeAreaView style={{ flex: 1, justifyContent: "center" }}>
@@ -79,8 +196,37 @@ const ForgotScreen: React.FC<any> = ({ navigation }) => {
           Thông tin tài khoản
         </Text>
 
+        <View style={{ alignItems: "center", marginBottom: 30 }}>
+          <Image
+            source={{ uri: formData.avatar || "default-avatar-uri" }}
+            style={{
+              width: 120,
+              height: 120,
+              borderRadius: 60,
+              marginBottom: 10,
+            }}
+          />
+          {isUploading && (
+            <Text
+              style={{
+                fontSize: 18,
+                fontFamily: "OpenSans_700Bold",
+                marginBottom: 8,
+              }}
+            >
+              Đang tải ảnh lên...
+            </Text>
+          )}
+          <Button
+            title={"Cập nhật ảnh đại diện"}
+            type={"medium"}
+            onPress={handleAvatarUpload}
+            theme={currentTheme.button_primary}
+          />
+        </View>
+
         <InputField
-          label={"Email hoặc username"}
+          label={"Địa chỉ Email"}
           icon={
             <MaterialIcons
               name="alternate-email"
@@ -90,19 +236,64 @@ const ForgotScreen: React.FC<any> = ({ navigation }) => {
             />
           }
           keyboardType="email-address"
-          inputType={"text"}
-          fieldButtonLabel={""}
-          fieldButtonFunction={() => {}}
-          onTextChange={(text) => {
-            setEmail(text);
-          }}
+          inputType="text"
+          onTextChange={handleEmailChange}
+          value={formData.email}
+          fieldButtonFunction={function (): void {}}
+        />
+
+        <InputField
+          label={"Họ"}
+          icon={
+            <MaterialIcons
+              name="alternate-email"
+              size={20}
+              color="#666"
+              style={{ marginRight: 5 }}
+            />
+          }
+          keyboardType="default"
+          inputType="text"
+          onTextChange={(text) => handleInputChange("firstName", text)}
+          fieldButtonFunction={function (): void {}}
+        />
+        <InputField
+          label={"Tên"}
+          icon={
+            <MaterialIcons
+              name="alternate-email"
+              size={20}
+              color="#666"
+              style={{ marginRight: 5 }}
+            />
+          }
+          keyboardType="default"
+          inputType="text"
+          onTextChange={(text) => handleInputChange("lastName", text)}
+          fieldButtonFunction={function (): void {}}
+        />
+        <InputField
+          label={"Ngày sinh"}
+          icon={
+            <MaterialIcons
+              name="alternate-email"
+              size={20}
+              color="#666"
+              style={{ marginRight: 5 }}
+            />
+          }
+          keyboardType="default"
+          inputType="text"
+          fieldButtonLabel={"Chọn ngày sinh"}
+          fieldButtonFunction={showDatePicker}
+          value={formData.birthday}
         />
 
         <Button
-          title={"Khôi phục mật khẩu"}
+          title={"Câp nhật thông tin"}
           type={"medium"}
           onPress={function (): void {
-            handleForgotPassword();
+            handleUpdateProfile();
           }}
           theme={{
             ...currentTheme,
@@ -113,25 +304,9 @@ const ForgotScreen: React.FC<any> = ({ navigation }) => {
             alignSelf: "center",
           }}
         />
-
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "center",
-            marginBottom: 30,
-          }}
-        >
-          <Text>Nhớ tài khoản rồi à?</Text>
-          <TouchableOpacity onPress={() => navigation.navigate("Login")}>
-            <Text style={{ color: "#1A73E8", fontWeight: "700" }}>
-              {" "}
-              Đăng nhập ngay
-            </Text>
-          </TouchableOpacity>
-        </View>
       </View>
     </SafeAreaView>
   );
 };
 
-export default ForgotScreen;
+export default NewAccountScreen;

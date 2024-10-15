@@ -27,6 +27,7 @@ interface DrawerProps {
   communities: Community[];
   onSettingsPress: () => void;
   onMenuPress: () => void;
+  onLogout: () => void;
 }
 
 const DrawerMenu: React.FC<DrawerProps> = ({
@@ -36,59 +37,67 @@ const DrawerMenu: React.FC<DrawerProps> = ({
   communities,
   onSettingsPress,
   onMenuPress,
+  onLogout,
 }) => {
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <Image source={{ uri: userAvatar }} style={styles.avatar} />
-        <View style={styles.userInfo}>
-          <Text style={styles.userName}>{userName}</Text>
-        </View>
-        <TouchableOpacity
-          onPress={onSettingsPress}
-          style={styles.settingsButton}
-        >
-          <Ionicons name="settings" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={onMenuPress}
-          style={styles.menuButton}
-        ></TouchableOpacity>
-      </View>
-
-      {menuItems.map((item, index) => (
-        <TouchableOpacity key={index} style={styles.menuItem}>
-          <View style={styles.menuItemContent}>
-            <View style={styles.iconContainer}>
-              <Ionicons name={item.icon} size={24} color="black" />
-            </View>
-            <Text style={styles.menuItemText}>{item.label}</Text>
+    <View style={styles.container}>
+      <ScrollView>
+        <View style={styles.header}>
+          <Image source={{ uri: userAvatar }} style={styles.avatar} />
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{userName}</Text>
           </View>
-          {item.badge && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{item.badge}</Text>
+          <TouchableOpacity
+            onPress={onSettingsPress}
+            style={styles.settingsButton}
+          >
+            <Ionicons name="settings" size={24} color="#007AFF" />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={onMenuPress}
+            style={styles.menuButton}
+          ></TouchableOpacity>
+        </View>
+
+        {menuItems.map((item, index) => (
+          <TouchableOpacity key={index} style={styles.menuItem}>
+            <View style={styles.menuItemContent}>
+              <View style={styles.iconContainer}>
+                <Ionicons name={item.icon} size={24} color="black" />
+              </View>
+              <Text style={styles.menuItemText}>{item.label}</Text>
             </View>
-          )}
-        </TouchableOpacity>
-      ))}
+            {(item.badge && item.badge > 0) && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{item.badge.toString()}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        ))}
 
-      <View style={styles.communitiesHeader}>
-        <Text style={styles.communitiesTitle}>Communities</Text>
-        <TouchableOpacity>
-          <Text style={styles.editButton}>Edit</Text>
-        </TouchableOpacity>
-      </View>
+        <View style={styles.communitiesHeader}>
+          <Text style={styles.communitiesTitle}>Communities</Text>
+          <TouchableOpacity>
+            <Text style={styles.editButton}>Edit</Text>
+          </TouchableOpacity>
+        </View>
 
-      {communities.map((community, index) => (
-        <TouchableOpacity key={index} style={styles.communityItem}>
-          <Image
-            source={{ uri: community.image }}
-            style={styles.communityImage}
-          />
-          <Text style={styles.communityName}>{community.name}</Text>
-        </TouchableOpacity>
-      ))}
-    </ScrollView>
+        {communities.map((community, index) => (
+          <TouchableOpacity key={index} style={styles.communityItem}>
+            <Image
+              source={{ uri: community.image }}
+              style={styles.communityImage}
+            />
+            <Text style={styles.communityName}>{community.name}</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <TouchableOpacity style={styles.logoutButton} onPress={onLogout}>
+        <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
+        <Text style={styles.logoutText}>Logout</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 
@@ -189,6 +198,18 @@ const styles = StyleSheet.create({
   },
   communityName: {
     fontSize: 16,
+  },
+  logoutButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: "#E0E0E0",
+  },
+  logoutText: {
+    fontSize: 16,
+    color: "#FF3B30",
+    marginLeft: 12,
   },
 });
 

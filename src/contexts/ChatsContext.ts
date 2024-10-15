@@ -1,13 +1,11 @@
 import { createContext } from "react";
-import { Profile } from "@/src/types/Profile";
-import { User } from "firebase/auth";
-import { Contact } from "../components/Drawer/NewMessageDrawer";
+import { Chat } from "../types/Message";
 
 export type ChatsContext = {
-  Suggestions: Contact[];
-  setSuggestions: (suggestions: Contact[]) => void;
+  Suggestions: Chat[];
+  setSuggestions: (suggestions: Chat[]) => void;
+  chatList: Chat[];
+  setChatList: (chatList: Chat[]) => void;
 };
 
-export const ChatsContext = createContext<ChatsContext>(
-  {} as ChatsContext
-);
+export const ChatsContext = createContext<ChatsContext>({} as ChatsContext);

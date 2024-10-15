@@ -1,7 +1,9 @@
+// @ts-nocheck
+
 import React, { useEffect, useState } from "react";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { createStackNavigator } from "@react-navigation/stack";
-import { User, onAuthStateChanged } from "firebase/auth";
+import { User, onAuthStateChanged, signOut } from "firebase/auth";
 import { getProfile } from "../firebase/Services/Profile";
 import { Profile } from "@/src/types/Profile";
 import { auth } from "@/src/firebase/firebase";
@@ -15,20 +17,24 @@ import LoginScreen from "../screens/Onboarding/Login/loginScreen";
 import RegisterScreen from "../screens/Onboarding/Login/RegisterScreen";
 import ForgotScreen from "../screens/Onboarding/Login/ForgotScreen";
 
-import { ChatRoomHeader, ChatsHeader } from "../components/Header/Header";
+import { ChatsHeader } from "../components/Header/Header";
 import HomeScreen from "../screens/Home/Chats/HomeScreen";
 import DrawerContent from "../components/Drawer/Drawer";
-import { Contact } from "../components/Drawer/NewMessageDrawer";
-import { ChatsContext } from "../contexts/ChatsContext";
 import ChatRoomScreen from "../screens/Home/Chats/ChatRoom";
+import { ChatsContext } from "../contexts/ChatsContext";
+import NewAccountScreen from "../screens/Onboarding/Infomation/NewAccount";
+import { Chat } from "../types/Message";
+import { Alert } from "react-native";
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
 const ScreenStackNavigation: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
-  const [Suggestions, setSuggestions] = useState<Contact[]>([]);
   const [userInfo, setUserInfo] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const [chatList, setChatList] = useState<Chat[]>([]);
+  const [Suggestions, setSuggestions] = useState<Chat[]>([]);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -94,31 +100,56 @@ const ScreenStackNavigation: React.FC = () => {
         </Stack.Navigator>
       ) : (
         <>
-          <ChatsContext.Provider value={{ Suggestions, setSuggestions }}>
+          <ChatsContext.Provider
+            value={{ Suggestions, setSuggestions, chatList, setChatList }}
+          >
             <Drawer.Navigator
-              initialRouteName=""
-              drawerContent={(props) => (
+              initialRouteName={userInfo ? "Home" : "Infomation"}
+              drawerContent={() => (
                 <DrawerContent
-                  userName="Vũ Nguyễn Thành Tâm"
-                  userAvatar="https://example.com/avatar.jpg"
+                  userName={`${userInfo?.firstName} ${userInfo?.lastName}`}
+                  userAvatar={
+                    userInfo?.avatarUrl ?? "https://example.com/avatar.jpg"
+                  }
                   menuItems={[
-                    { icon: "chatbubbles", label: "Chats", badge: 5 },
-                    { icon: "storefront", label: "Marketplace" },
-                    { icon: "mail", label: "Message requests" },
-                    { icon: "archive", label: "Archive" },
-                  ]}
-                  communities={[
                     {
-                      image: "https://example.com/community1.jpg",
-                      name: "Osu! Việt Nam Commmunity",
+                      icon: "chatbubbles",
+                      label: "Chats",
+                      badge: chatList.length > 0 ? chatList.length : "0",
                     },
-                    // ... other communities
                   ]}
+                  communities={[]}
                   onSettingsPress={() => {
                     /* Handle settings press */
                   }}
                   onMenuPress={() => {
                     /* Handle menu press */
+                  }}
+                  onLogout={() => {
+                    Alert.alert(
+                      "Logout",
+                      "Are you sure you want to logout?",
+                      [
+                        {
+                          text: "Cancel",
+                          style: "cancel",
+                        },
+                        {
+                          text: "Logout",
+                          onPress: async () => {
+                            try {
+                              await signOut(auth);
+                              setUser(null);
+                              setUserInfo(null);
+                              setSuggestions([]);
+                            } catch (error) {
+                              console.error("Failed to logout:", error);
+                            }
+                          },
+                        },
+                      ],
+                      { cancelable: true }
+                    );
                   }}
                 />
               )}
@@ -134,6 +165,15 @@ const ScreenStackNavigation: React.FC = () => {
               }}
             >
               <Drawer.Screen
+                name="Infomation"
+                component={NewAccountScreen}
+                options={{
+                  headerShown: false,
+                  drawerLabel: () => null,
+                }}
+              />
+
+              <Drawer.Screen
                 name="Home"
                 component={HomeScreen}
                 options={{
@@ -143,12 +183,11 @@ const ScreenStackNavigation: React.FC = () => {
                   },
                 }}
               />
-
               <Drawer.Screen
                 name="ChatRoom"
                 component={ChatRoomScreen}
                 options={{
-                  headerShown: true,
+                  headerShown: false,
                 }}
               />
             </Drawer.Navigator>

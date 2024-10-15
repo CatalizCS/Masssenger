@@ -13,6 +13,7 @@ export type Message = {
 export type Chat = {
   chatId: string;
   userId: string;
+  avatarUrl: string;
   chatName: string;
   messages: Message[];
   readStatus: [{ userId: string; read: boolean }];

@@ -1,178 +1,107 @@
-import React, { useContext, useEffect, useState } from "react";
-import { StyleSheet, Text, View, TouchableOpacity, Image } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { StatusBar } from "expo-status-bar";
+import React, { useContext, useCallback, useMemo, useEffect } from "react";
+import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
 import { Profile } from "@/src/types/Profile";
-import BottomDrawer, { Contact } from "../Drawer/NewMessageDrawer";
+import BottomDrawer from "../Drawer/NewMessageDrawer";
 import { getAllProfiles } from "@/src/firebase/Services/Profile";
 import { ChatsContext } from "../../contexts/ChatsContext";
+import { RegistrationContext } from "@/src/contexts/RegistrationContext";
+import { getMessages } from "@/src/firebase/Services/Message";
+import { Chat, Message } from "@/src/types/Message";
+import { Ionicons } from "@expo/vector-icons";
 
-const ChatsHeader: React.FC<any> = ({ navigation }) => {
-  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+const ChatsHeader: React.FC<any> = () => {
+  const navigation = useNavigation();
+  const [isDrawerVisible, setIsDrawerVisible] = React.useState(false);
   const { Suggestions, setSuggestions } = useContext(ChatsContext);
+  const { userInfo } = useContext(RegistrationContext);
 
-  useState(() => {
-    async function fetchContacts() {
+  const fetchContacts = useCallback(async () => {
+    try {
       const profiles = await getAllProfiles();
 
-      const contacts = profiles.map((profile: Profile) => ({
-        id: profile.userId,
-        name: `${profile.firstName} ${profile.lastName}`,
-        avatar: profile.avatarUrl,
-        status: profile.isOnline,
-      }));
+      const contacts = await Promise.all(
+        profiles.map(async (profile: Profile) => {
+          const getAllMessages = await getMessages(profile.userId).catch(
+            () => []
+          );
+          const readStatus = [profile.userId, userInfo?.userId].map(
+            (userId) => ({
+              userId: userId!,
+              read: !!getAllMessages[0],
+            })
+          );
 
-      // checking if the contact is already in the chat list
-      const newSuggestions = contacts.filter(
-        (contact) =>
-          !Suggestions.some((suggestion) => suggestion.id === contact.id)
+          return {
+            chatId: profile.userId,
+            userId: profile.userId,
+            avatarUrl: profile.avatarUrl,
+            chatName: `${profile.firstName} ${profile.lastName}`,
+            messages: getAllMessages as Message[],
+            readStatus: readStatus as [{ userId: string; read: boolean }],
+            participants: [profile.userId, userInfo?.userId].filter(Boolean),
+            isGroupChat: false,
+          };
+        })
       );
 
-      setSuggestions(newSuggestions);
-    }
+      const newSuggestions = contacts.filter(
+        (contact) => contact.userId !== userInfo?.userId
+      );
 
-    fetchContacts();
+      setSuggestions(newSuggestions as Chat[]);
+    } catch (error) {
+      console.error("Error fetching contacts:", error);
+    }
+  }, [Suggestions, setSuggestions, userInfo]);
+
+  useEffect(() => {
+    if (Suggestions.length === 0) fetchContacts();
   });
 
-  return (
-    <View style={ChatListStyles.header}>
-      <TouchableOpacity onPressIn={() => DrawerActions.openDrawer()}>
-        <Image
-          source={require("@/assets/icons/hamburger.png")}
-          style={ChatListStyles.icon}
-        />
-      </TouchableOpacity>
-      <Text style={ChatListStyles.title}>Chats</Text>
-      <TouchableOpacity onPressIn={() => setIsDrawerVisible(true)}>
-        <Image
-          source={require("@/assets/icons/new-message.png")}
-          style={ChatListStyles.icon}
-        />
-      </TouchableOpacity>
+  const toggleDrawer = useCallback(
+    () => setIsDrawerVisible((prev) => !prev),
+    []
+  );
+
+  const memoizedBottomDrawer = useMemo(
+    () => (
       <BottomDrawer
         isVisible={isDrawerVisible}
-        onClose={() => setIsDrawerVisible(false)}
+        onClose={toggleDrawer}
         contacts={Suggestions}
       />
-    </View>
+    ),
+    [isDrawerVisible, toggleDrawer, Suggestions]
   );
-};
 
-export interface ChatRoomHeaderProps {
-  username: string;
-  imageUri: string;
-  status: boolean;
-  onCallPress: () => void;
-  onVideoPress: () => void;
-}
-
-const ChatRoomHeader: React.FC<ChatRoomHeaderProps> = ({
-  username,
-  imageUri,
-  status,
-  onCallPress,
-  onVideoPress,
-}) => {
-  const navigation = useNavigation();
-  console.log("ChatRoomHeaderProps", username, imageUri, status);
   return (
-    <View style={ChatRoomStyles.container}>
-      <StatusBar style="light" />
-      <View style={ChatRoomStyles.headerContent}>
-        <View style={ChatRoomStyles.leftSection}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={ChatRoomStyles.backButton}
-          >
-            <Ionicons name="chevron-back" size={24} color="white" />
-          </TouchableOpacity>
-          <View style={ChatRoomStyles.userInfo}>
-            <Image source={{ uri: imageUri }} style={ChatRoomStyles.avatar} />
-            <View>
-              <Text style={ChatRoomStyles.name}>{username}</Text>
-              <Text style={ChatRoomStyles.status}>{status}</Text>
-            </View>
-          </View>
-        </View>
-        <View style={ChatRoomStyles.rightSection}>
-          <TouchableOpacity
-            onPress={onCallPress}
-            style={ChatRoomStyles.iconButton}
-          >
-            <Ionicons name="call" size={24} color="white" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={onVideoPress}>
-            <Ionicons name="videocam" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-      </View>
+    <View style={styles.header}>
+      <TouchableOpacity
+        onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
+      >
+        <Ionicons name="menu" size={24} color="blue" />
+      </TouchableOpacity>
+      <Text style={styles.title}>Chats</Text>
+      <TouchableOpacity onPress={toggleDrawer}>
+        <Ionicons name="create-outline" size={24} color="blue" />
+      </TouchableOpacity>
+      {memoizedBottomDrawer}
     </View>
   );
 };
 
-const ChatListStyles = StyleSheet.create({
+const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: 15,
-    backgroundColor: "#ffffff",
+    padding: 10,
   },
   title: {
-    color: "#000000",
-    fontSize: 25,
-    fontWeight: "600",
-  },
-  icon: {
-    width: 45,
-    height: 45,
+    fontSize: 20,
+    fontWeight: "bold",
   },
 });
 
-const ChatRoomStyles = StyleSheet.create({
-  container: {
-    backgroundColor: "#ffffff",
-    paddingTop: 50,
-    paddingBottom: 10,
-    paddingHorizontal: 15,
-  },
-  headerContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  leftSection: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  backButton: {
-    marginRight: 10,
-  },
-  userInfo: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
-  },
-  name: {
-    color: "white",
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  status: {
-    color: "#A0A0A0",
-    fontSize: 14,
-  },
-  rightSection: {
-    flexDirection: "row",
-  },
-  iconButton: {
-    marginRight: 15,
-  },
-});
-export { ChatsHeader, ChatRoomHeader };
+export { ChatsHeader };

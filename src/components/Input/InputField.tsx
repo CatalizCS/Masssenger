@@ -4,8 +4,10 @@ import { View, Text, TouchableOpacity, TextInput } from "react-native";
 export type InputFieldProps = {
   label: string;
   icon: JSX.Element;
+  value?: string;
   inputType: "text" | "password";
   keyboardType: "default" | "email-address" | "numeric" | "phone-pad";
+  allowEdit?: boolean;
   fieldButtonLabel?: string;
   fieldButtonFunction: () => void;
   onTextChange?: (text: string) => void;
@@ -14,8 +16,10 @@ export type InputFieldProps = {
 const InputField: React.FC<InputFieldProps> = ({
   label,
   icon,
+  value,
   inputType,
   keyboardType,
+  allowEdit,
   fieldButtonLabel,
   fieldButtonFunction,
   onTextChange,
@@ -38,6 +42,8 @@ const InputField: React.FC<InputFieldProps> = ({
           style={{ flex: 1, paddingVertical: 0 }}
           secureTextEntry={true}
           onChange={(e) => onTextChange && onTextChange(e.nativeEvent.text)}
+          editable={allowEdit}
+          value={value}
         />
       ) : (
         <TextInput
@@ -45,6 +51,8 @@ const InputField: React.FC<InputFieldProps> = ({
           keyboardType={keyboardType}
           style={{ flex: 1, paddingVertical: 0 }}
           onChange={(e) => onTextChange && onTextChange(e.nativeEvent.text)}
+          editable={allowEdit}
+          value={value}
         />
       )}
       {fieldButtonLabel && (

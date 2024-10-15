@@ -1,6 +1,6 @@
 import { db } from "@/src/firebase/firebase";
 import { Message, Chat } from "@/src/types/Message";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs, setDoc } from "firebase/firestore";
 
 export const getMessages = async (chatId: string): Promise<Message[]> => {
   const chatRef = doc(db, "chats", chatId);
@@ -25,14 +25,23 @@ export const getChat = async (chatId: string): Promise<Chat> => {
 };
 
 export const getChats = async (userId: string): Promise<Chat[]> => {
-  const chatRef = doc(db, "chats", userId);
-  const chatDoc = await getDoc(chatRef);
+  const chats: Chat[] = [];
 
-  if (chatDoc.exists()) {
-    return chatDoc.data().chats as Chat[];
-  } else {
-    throw new Error("Chats not found");
-  }
+  const querySnapshot = await getDocs(collection(db, "chats"));
+  querySnapshot.forEach((doc) => {
+    const chat = doc.data() as Chat;
+
+    if (chat.participants.includes(userId)) {
+      chats.push(chat);
+    }
+  });
+
+  return chats;
+};
+
+export const updateChat = async (chat: Chat) => {
+  const chatRef = doc(db, "chats", chat.chatId);
+  await setDoc(chatRef, chat, { merge: true });
 };
 
 export const sortChatWithLastMessage = (chats: Chat[]): Chat[] => {
@@ -44,7 +53,11 @@ export const sortChatWithLastMessage = (chats: Chat[]): Chat[] => {
   });
 };
 
-export const sendMessage = async (chatId: string, message: Message) => {
+export const sendMessage = async (
+  chatId: string,
+  message: Message,
+  chatData: Chat
+) => {
   const chatRef = doc(db, "chats", chatId);
   const chatDoc = await getDoc(chatRef);
 
@@ -53,6 +66,48 @@ export const sendMessage = async (chatId: string, message: Message) => {
     messages.push(message);
     await setDoc(chatRef, { messages }, { merge: true });
   } else {
-    throw new Error("Chat not found");
+    const chat: Chat = {
+      chatId: chatId || "",
+      userId: message.userId || "unknownUserId",
+      avatarUrl: chatData?.avatarUrl || "defaultAvatarUrl",
+      chatName: chatData.chatName || "Unnamed Chat",
+      messages: [message],
+      readStatus: [{ userId: message.userId || "", read: false }],
+      participants: [message.userId || "", message.senderId || ""],
+      isGroupChat: false,
+    };
+    await setDoc(chatRef, chat);
   }
+};
+
+import { onSnapshot as firestoreOnSnapshot } from "firebase/firestore";
+
+export const subscribeToChat = (
+  chatId: string,
+  chatData: Chat,
+  onSnapshot: (chat: Chat) => void
+) => {
+  const chatRef = doc(db, "chats", chatId);
+  return firestoreOnSnapshot(chatRef, (snapshot) => {
+    if (snapshot.exists()) {
+      onSnapshot(snapshot.data() as Chat);
+    } else {
+      console.log("Chat not found, creating new chat", chatId);
+
+      const chat: Chat = {
+        chatId,
+        userId: chatData.userId,
+        avatarUrl: chatData.avatarUrl,
+        chatName: chatData.chatName,
+        messages: [],
+        readStatus: [{ userId: chatData.userId, read: false }],
+        participants: [chatData.userId, chatData.userId],
+        isGroupChat: false,
+      };
+
+      console.log("Creating new chat", chat);
+
+      setDoc(chatRef, chat);
+    }
+  });
 };

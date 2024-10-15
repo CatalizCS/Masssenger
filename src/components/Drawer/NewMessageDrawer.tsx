@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+import React, { useRef, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -13,19 +13,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import Layout from "@/src/contexts/Layout";
 import { useNavigation } from "@react-navigation/native";
-import { Message } from "@/src/types/Message";
-
-export interface Contact {
-  id: string;
-  name: string;
-  avatar: string;
-  isOnline?: boolean;
-}
+import { Chat } from "@/src/types/Message";
+import { RegistrationContext } from "@/src/contexts/RegistrationContext";
 
 interface BottomDrawerProps {
   isVisible: boolean;
   onClose: () => void;
-  contacts: Contact[];
+  contacts: Chat[];
 }
 
 const BottomDrawer: React.FC<BottomDrawerProps> = ({
@@ -34,6 +28,7 @@ const BottomDrawer: React.FC<BottomDrawerProps> = ({
   contacts,
 }) => {
   const slideAnim = useRef(new Animated.Value(Layout.window.height)).current;
+  const { userInfo } = useContext(RegistrationContext);
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -102,36 +97,40 @@ const BottomDrawer: React.FC<BottomDrawerProps> = ({
 
             {contacts.length > 0 ? (
               contacts.map((contact) => {
-                const avatarUrl = contact.avatar;
-                const username = contact.name;
-                const messages: Message[] = [];
+                const chatId = contact.chatId;
+                const userId = contact.userId;
+                const selfId = userInfo?.userId;
+                const avatarUrl = contact.avatarUrl;
+                const chatName = contact.chatName;
+                const messages = contact.messages ?? [];
+                const readStatus = contact.readStatus ?? [];
+                const participants = contact.participants ?? [];
+                const isGroupChat = contact.isGroupChat ?? false;
 
-                console.log("NewMessageDrawer", contact);
                 return (
                   <TouchableOpacity
-                    key={contact.id}
+                    key={chatId}
                     style={styles.contactItem}
                     onPress={() =>
                       navigation.navigate(
                         // @ts-ignore
                         "ChatRoom",
                         {
+                          chatId,
+                          userId,
+                          selfId,
                           avatarUrl,
-                          username,
+                          chatName,
                           messages,
-                          userId: contact.id,
+                          readStatus,
+                          participants,
+                          isGroupChat,
                         }
                       )
                     }
                   >
-                    <Image
-                      source={{ uri: contact.avatar }}
-                      style={styles.avatar}
-                    />
-                    <Text style={styles.contactName}>{contact.name}</Text>
-                    {contact.isOnline && (
-                      <View style={styles.onlineIndicator} />
-                    )}
+                    <Image source={{ uri: avatarUrl }} style={styles.avatar} />
+                    <Text style={styles.contactName}>{chatName}</Text>
                   </TouchableOpacity>
                 );
               })
