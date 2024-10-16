@@ -6,9 +6,15 @@ import { useNavigation } from "@react-navigation/native";
 
 interface ChatHeaderProps {
   chat: Chat;
+  chatName: string;
+  chatAvatar: string;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ chat }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({
+  chat,
+  chatName,
+  chatAvatar,
+}) => {
   const navigation = useNavigation();
   return (
     <View style={styles.header}>
@@ -21,9 +27,9 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ chat }) => {
         }}
       />
       <View style={styles.headerContent}>
-        <Image source={{ uri: chat.avatarUrl }} style={styles.avatar} />
+        <Image source={{ uri: chatAvatar }} style={styles.avatar} />
         <View>
-          <Text style={styles.name}>{chat.chatName}</Text>
+          <Text style={styles.name}>{chatName}</Text>
           <Text style={styles.status}>
             {chat.isGroupChat
               ? `${chat.participants.length} participants`

@@ -16,9 +16,9 @@ export type Chat = {
   avatarUrl: string;
   chatName: string;
   messages: Message[];
-  readStatus: [{ userId: string; read: boolean }];
   participants: string[];
   isGroupChat: boolean;
+  isDeleted?: boolean;
 };
 
 export type Attachment = {

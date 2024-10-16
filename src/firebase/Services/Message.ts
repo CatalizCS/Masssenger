@@ -31,7 +31,7 @@ export const getChats = async (userId: string): Promise<Chat[]> => {
   querySnapshot.forEach((doc) => {
     const chat = doc.data() as Chat;
 
-    if (chat.participants.includes(userId)) {
+    if (chat.participants.includes(userId) && !chat.isDeleted) {
       chats.push(chat);
     }
   });
@@ -46,6 +46,14 @@ export const updateChat = async (chat: Chat) => {
 
 export const sortChatWithLastMessage = (chats: Chat[]): Chat[] => {
   return chats.sort((a, b) => {
+    if (a.messages.length === 0) {
+      return 1;
+    }
+
+    if (b.messages.length === 0) {
+      return -1;
+    }
+
     const aTime = new Date(a.messages[a.messages.length - 1].timestamp);
     const bTime = new Date(b.messages[b.messages.length - 1].timestamp);
 
@@ -53,30 +61,25 @@ export const sortChatWithLastMessage = (chats: Chat[]): Chat[] => {
   });
 };
 
-export const sendMessage = async (
-  chatId: string,
-  message: Message,
-  chatData: Chat
-) => {
+export const createNewChat = async (chat: Chat) => {
+  try {
+    const newDocRef = doc(collection(db, "chats"));
+    chat.chatId = newDocRef.id;
+    await setDoc(newDocRef, chat);
+    return chat.chatId;
+  } catch (error) {
+    console.error("Error creating chat", error);
+  }
+};
+
+export const sendMessage = async (chatId: string, message: Message) => {
   const chatRef = doc(db, "chats", chatId);
   const chatDoc = await getDoc(chatRef);
 
   if (chatDoc.exists()) {
-    const messages = chatDoc.data().messages as Message[];
+    const messages = (chatDoc.data().messages as Message[]) ?? [];
     messages.push(message);
     await setDoc(chatRef, { messages }, { merge: true });
-  } else {
-    const chat: Chat = {
-      chatId: chatId || "",
-      userId: message.userId || "unknownUserId",
-      avatarUrl: chatData?.avatarUrl || "defaultAvatarUrl",
-      chatName: chatData.chatName || "Unnamed Chat",
-      messages: [message],
-      readStatus: [{ userId: message.userId || "", read: false }],
-      participants: [message.userId || "", message.senderId || ""],
-      isGroupChat: false,
-    };
-    await setDoc(chatRef, chat);
   }
 };
 
@@ -84,30 +87,37 @@ import { onSnapshot as firestoreOnSnapshot } from "firebase/firestore";
 
 export const subscribeToChat = (
   chatId: string,
-  chatData: Chat,
   onSnapshot: (chat: Chat) => void
 ) => {
   const chatRef = doc(db, "chats", chatId);
   return firestoreOnSnapshot(chatRef, (snapshot) => {
     if (snapshot.exists()) {
-      onSnapshot(snapshot.data() as Chat);
-    } else {
-      console.log("Chat not found, creating new chat", chatId);
-
-      const chat: Chat = {
-        chatId,
-        userId: chatData.userId,
-        avatarUrl: chatData.avatarUrl,
-        chatName: chatData.chatName,
-        messages: [],
-        readStatus: [{ userId: chatData.userId, read: false }],
-        participants: [chatData.userId, chatData.userId],
-        isGroupChat: false,
-      };
-
-      console.log("Creating new chat", chat);
-
-      setDoc(chatRef, chat);
+      const chat = snapshot.data() as Chat;
+      onSnapshot(chat);
     }
   });
+};
+
+export const subscribeToChats = (
+  userId: string,
+  onSnapshot: (chats: Chat[]) => void
+) => {
+  const chatRef = collection(db, "chats");
+  return firestoreOnSnapshot(chatRef, (snapshot) => {
+    const chats: Chat[] = [];
+    snapshot.forEach((doc) => {
+      const chat = doc.data() as Chat;
+
+      if (chat.participants.includes(userId) && !chat.isDeleted) {
+        chats.push(chat);
+      }
+    });
+
+    onSnapshot(chats);
+  });
+};
+
+export const deleteChat = async (chatId: string) => {
+  const chatRef = doc(db, "chats", chatId);
+  await setDoc(chatRef, { isDeleted: true }, { merge: true });
 };

@@ -6,15 +6,17 @@ interface ChatInputProps {
   inputText: string;
   setInputText: (text: string) => void;
   sendMessage: () => void;
+  sendAttachment: () => void;
 }
 
 const ChatInput: React.FC<ChatInputProps> = ({
   inputText,
   setInputText,
   sendMessage,
+  sendAttachment,
 }) => (
   <View style={styles.inputContainer}>
-    <Ionicons name="add" size={24} color="gray" />
+    <Ionicons name="add" size={24} color="gray" onPress={sendAttachment} />
     <TextInput
       style={styles.input}
       value={inputText}

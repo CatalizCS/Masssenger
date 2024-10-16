@@ -1,7 +1,11 @@
+import { getProfile } from "@/src/firebase/Services/Profile";
 import { Chat } from "@/src/types/Message";
 import { useNavigation } from "@react-navigation/native";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { Image, StyleSheet, Text, View, Alert } from "react-native";
+import { useEffect, useState } from "react";
 import { TouchableOpacity } from "react-native-gesture-handler";
+import { getAvatarProfile } from "../../firebase/Services/Profile";
+import { deleteChat } from "@/src/firebase/Services/Message";
 
 const ChatItem: React.FC<{ chat: Chat; currentUserId: string }> = ({
   chat,
@@ -9,9 +13,77 @@ const ChatItem: React.FC<{ chat: Chat; currentUserId: string }> = ({
 }) => {
   const navigation = useNavigation();
   const lastMessage = chat.messages[chat.messages.length - 1];
-  const isUnread =
-    chat.readStatus.find((status) => status.userId === currentUserId)?.read ===
-    false;
+  const otherParticipant = chat.participants.filter(
+    (participant) => participant !== currentUserId
+  );
+  const [chatName, setChatName] = useState<string>("");
+  const [avatar, setAvatar] = useState<string>("");
+
+  useEffect(() => {
+    async function fetchChatName() {
+      const name = await getChatName();
+      setChatName(name || "Unknown");
+    }
+
+    async function fetchAvatar() {
+      const avatarResponse = await getAvatar();
+      setAvatar(avatarResponse || "https://via.placeholder.com/50");
+    }
+
+    fetchChatName();
+    fetchAvatar();
+  }, []);
+
+  async function getChatName() {
+    if (otherParticipant && otherParticipant.length === 1) {
+      const profile = await getProfile(otherParticipant[0]);
+      return `${profile?.firstName} ${profile?.lastName}`;
+    } else if (otherParticipant && otherParticipant.length > 1) {
+      const profileNames = await Promise.all(
+        otherParticipant.map(async (participant: string) => {
+          const profile = await getProfile(participant);
+          return `${profile?.firstName} ${profile?.lastName}`;
+        })
+      );
+      return profileNames.join(", ");
+    } else if (chat.chatName) {
+      return chat.chatName;
+    }
+  }
+
+  async function getAvatar() {
+    if (otherParticipant && otherParticipant.length === 1) {
+      const profile = await getAvatarProfile(otherParticipant[0]);
+      return profile;
+    } else if (otherParticipant && otherParticipant.length > 1) {
+      const profile = await getAvatarProfile(otherParticipant[0]);
+      return profile;
+    } else if (chat.avatarUrl) {
+      return chat.avatarUrl;
+    }
+  }
+
+  async function onHoldPress() {
+    // show menu to delete chat
+    if (!chat.isGroupChat) {
+      Alert.alert("Delete chat", "Are you sure you want to delete this chat?", [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await deleteChat(chat.chatId);
+            } catch (error) {
+              console.error("Error deleting chat", error);
+            }
+          },
+        },
+      ]);
+    }
+  }
 
   return (
     <TouchableOpacity
@@ -19,10 +91,7 @@ const ChatItem: React.FC<{ chat: Chat; currentUserId: string }> = ({
       onPress={() => {
         const chatId = chat.chatId;
         const userId = chat.userId;
-        const avatarUrl = chat.avatarUrl;
-        const chatName = chat.chatName;
         const messages = chat.messages ?? [];
-        const readStatus = chat.readStatus ?? [];
         const participants = chat.participants ?? [];
         const isGroupChat = chat.isGroupChat ?? false;
 
@@ -30,21 +99,16 @@ const ChatItem: React.FC<{ chat: Chat; currentUserId: string }> = ({
         navigation.navigate("ChatRoom", {
           chatId,
           userId,
-          avatarUrl,
-          chatName,
           messages,
-          readStatus,
           participants,
           isGroupChat,
         });
       }}
+      onLongPress={onHoldPress}
     >
-      <Image
-        source={{ uri: chat.avatarUrl || "https://via.placeholder.com/50" }}
-        style={styles.avatar}
-      />
+      <Image source={{ uri: avatar }} style={styles.avatar} />
       <View style={styles.chatInfo}>
-        <Text style={styles.name}>{chat.chatName}</Text>
+        <Text style={styles.name}>{chatName}</Text>
         <Text style={styles.lastMessage} numberOfLines={1}>
           {lastMessage ? lastMessage.message : "No messages yet"}
         </Text>
@@ -58,7 +122,6 @@ const ChatItem: React.FC<{ chat: Chat; currentUserId: string }> = ({
               })
             : ""}
         </Text>
-        {isUnread && <View style={styles.unreadDot} />}
       </View>
     </TouchableOpacity>
   );
@@ -92,13 +155,6 @@ const styles = StyleSheet.create({
   time: {
     color: "gray",
     fontSize: 12,
-  },
-  unreadDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "blue",
-    marginTop: 5,
   },
 });
 

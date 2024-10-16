@@ -25,20 +25,13 @@ const ChatsHeader: React.FC<any> = () => {
           const getAllMessages = await getMessages(profile.userId).catch(
             () => []
           );
-          const readStatus = [profile.userId, userInfo?.userId].map(
-            (userId) => ({
-              userId: userId!,
-              read: !!getAllMessages[0],
-            })
-          );
-
+          
           return {
             chatId: profile.userId,
             userId: profile.userId,
             avatarUrl: profile.avatarUrl,
             chatName: `${profile.firstName} ${profile.lastName}`,
             messages: getAllMessages as Message[],
-            readStatus: readStatus as [{ userId: string; read: boolean }],
             participants: [profile.userId, userInfo?.userId].filter(Boolean),
             isGroupChat: false,
           };

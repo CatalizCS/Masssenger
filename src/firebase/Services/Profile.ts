@@ -1,6 +1,13 @@
 import { db } from "@/src/firebase/firebase";
 import { Profile } from "@/src/types/Profile";
-import { doc, getDoc, setDoc, getDocs, collection } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  setDoc,
+  getDocs,
+  collection,
+  onSnapshot,
+} from "firebase/firestore";
 
 export const getProfile = async (userId: string): Promise<Profile | null> => {
   const docRef = doc(db, "profiles", userId);
@@ -38,4 +45,19 @@ export const getAvatarProfile = async (userId: string): Promise<string> => {
   } else {
     return "";
   }
+};
+
+export const subscribeToProfiles = (
+  callback: (profiles: Profile[]) => void
+): (() => void) => {
+  const unsubscribe = onSnapshot(collection(db, "profiles"), (snapshot) => {
+    const profiles: Profile[] = [];
+    snapshot.forEach((doc) => {
+      profiles.push(doc.data() as Profile);
+    });
+
+    callback(profiles);
+  });
+
+  return unsubscribe;
 };
