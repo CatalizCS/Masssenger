@@ -1,4 +1,10 @@
-import React from "react";
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   View,
   Text,
@@ -8,11 +14,19 @@ import {
   StyleSheet,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { RegistrationContext } from "@/src/contexts/RegistrationContext";
+import { getChats } from "../../firebase/Services/Message";
+import { useNavigation } from "@react-navigation/native";
+import { Chat } from "@/src/types/Message";
+import { getProfile } from "@/src/firebase/Services/Profile";
+import SettingsDrawer from "@/src/screens/Home/Chats/Settings";
 
 interface MenuItem {
+  id?: string;
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  badge?: number;
+  badge?: string;
+  onclick?: () => void;
 }
 
 interface Community {
@@ -21,24 +35,116 @@ interface Community {
 }
 
 interface DrawerProps {
-  userName: string;
-  userAvatar: string;
-  menuItems: MenuItem[];
-  communities: Community[];
-  onSettingsPress: () => void;
   onMenuPress: () => void;
   onLogout: () => void;
 }
 
-const DrawerMenu: React.FC<DrawerProps> = ({
-  userName,
-  userAvatar,
-  menuItems,
-  communities,
-  onSettingsPress,
-  onMenuPress,
-  onLogout,
-}) => {
+const DrawerMenu: React.FC<DrawerProps> = ({ onMenuPress, onLogout }) => {
+  const navigation = useNavigation();
+  const { userInfo } = useContext(RegistrationContext);
+  const [userName, setUserName] = useState<string>("");
+  const [userAvatar, setUserAvatar] = useState<string>("");
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [communities, setCommunities] = useState<Community[]>([]);
+  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+
+  useEffect(() => {
+    if (userInfo) {
+      setUserName(`${userInfo?.firstName} ${userInfo?.lastName}`);
+      setUserAvatar(userInfo?.avatarUrl ?? "https://example.com/avatar.jpg");
+      setMenuItems([
+        {
+          icon: "chatbubbles",
+          label: "Chats",
+          badge: "1",
+          onclick: () => {
+            navigation.navigate("Home" as never);
+          },
+        },
+      ]);
+      setCommunities([]);
+    }
+  }, [userInfo]);
+
+  const updateBadge = (index: number, badge: string) => {
+    setMenuItems((prev) =>
+      prev.map((item, i) => (i === index ? { ...item, badge } : item))
+    );
+  };
+
+  useEffect(() => {
+    async function getChatName(chat: Chat) {
+      if (!chat.isGroupChat) {
+        const otherParticipant = chat.participants.filter(
+          (participant) => participant !== userInfo?.userId
+        );
+        const profile = await getProfile(otherParticipant[0]);
+        return `${profile?.firstName} ${profile?.lastName}`;
+      } else {
+        return chat.chatName;
+      }
+    }
+
+    async function getChatBadge() {
+      if (!userInfo) return;
+
+      const chat = await getChats(userInfo?.userId);
+      const badge = chat.length.toString();
+      updateBadge(0, badge);
+
+      // add more badges chat and when click navigate to chat room
+      chat.forEach(async (chat) => {
+        const chatName = await getChatName(chat);
+
+        // check if chat exist in menuItems
+        const isExist = menuItems.some((item) => item.id === chat.chatId);
+
+        if (isExist) {
+          return;
+        }
+
+        console.log("chat", chat);
+
+        const chatId = chat.chatId;
+        const userId = chat.userId;
+        const messages = chat.messages ?? [];
+        const participants = chat.participants ?? [];
+        const isGroupChat = chat.isGroupChat ?? false;
+
+        const badge: MenuItem = {
+          id: chat.chatId,
+          icon: "chatbubbles",
+          label: chatName,
+          onclick: () => {
+            //@ts-ignore
+            navigation.navigate("ChatRoom", {
+              chatId,
+              userId,
+              messages,
+              participants,
+              isGroupChat,
+            });
+          },
+        };
+
+        // filter out existing menuItems and add new chat badge
+        setMenuItems((prev) => [...prev.filter((item) => !item.id), badge]);
+      });
+    }
+
+    getChatBadge();
+  }, [userInfo]);
+
+  const toggleDrawer = useCallback(
+    () => setIsDrawerVisible((prev) => !prev),
+    []
+  );
+
+  const memoizedBottomDrawer = useMemo(
+    () => <SettingsDrawer isVisible={isDrawerVisible} onClose={toggleDrawer} />,
+    [isDrawerVisible, toggleDrawer]
+  );
+
   return (
     <View style={styles.container}>
       <ScrollView>
@@ -48,7 +154,7 @@ const DrawerMenu: React.FC<DrawerProps> = ({
             <Text style={styles.userName}>{userName}</Text>
           </View>
           <TouchableOpacity
-            onPress={onSettingsPress}
+            onPress={toggleDrawer}
             style={styles.settingsButton}
           >
             <Ionicons name="settings" size={24} color="#007AFF" />
@@ -60,14 +166,18 @@ const DrawerMenu: React.FC<DrawerProps> = ({
         </View>
 
         {menuItems.map((item, index) => (
-          <TouchableOpacity key={index} style={styles.menuItem}>
+          <TouchableOpacity
+            key={index}
+            style={styles.menuItem}
+            onPress={item.onclick}
+          >
             <View style={styles.menuItemContent}>
               <View style={styles.iconContainer}>
                 <Ionicons name={item.icon} size={24} color="black" />
               </View>
               <Text style={styles.menuItemText}>{item.label}</Text>
             </View>
-            {(item.badge && item.badge > 0) && (
+            {item.badge && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{item.badge.toString()}</Text>
               </View>
@@ -97,6 +207,7 @@ const DrawerMenu: React.FC<DrawerProps> = ({
         <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
         <Text style={styles.logoutText}>Logout</Text>
       </TouchableOpacity>
+      {memoizedBottomDrawer}
     </View>
   );
 };

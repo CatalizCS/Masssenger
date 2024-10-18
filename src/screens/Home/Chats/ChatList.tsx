@@ -4,7 +4,7 @@ import { useNavigation } from "@react-navigation/native";
 import { Image, StyleSheet, Text, View, Alert } from "react-native";
 import { useEffect, useState } from "react";
 import { TouchableOpacity } from "react-native-gesture-handler";
-import { getAvatarProfile } from "../../firebase/Services/Profile";
+import { getAvatarProfile } from "../../../firebase/Services/Profile";
 import { deleteChat } from "@/src/firebase/Services/Message";
 
 const ChatItem: React.FC<{ chat: Chat; currentUserId: string }> = ({

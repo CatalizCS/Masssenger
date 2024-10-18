@@ -16,7 +16,7 @@ import { RegistrationContext } from "@/src/contexts/RegistrationContext";
 import { getAvatarProfile, getProfile } from "@/src/firebase/Services/Profile";
 
 import ChatHeader from "@/src/components/Header/ChatHeader";
-import ChatBubble from "@/src/components/Chats/ChatBubble";
+import ChatBubble from "@/src/screens/Home/Chats/ChatBubble";
 import ChatInput from "@/src/components/Input/ChatInput";
 import { showErrorToast } from "@/src/components/Toast/Toast";
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";

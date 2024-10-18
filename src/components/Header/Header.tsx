@@ -2,7 +2,7 @@ import React, { useContext, useCallback, useMemo, useEffect } from "react";
 import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
 import { Profile } from "@/src/types/Profile";
-import BottomDrawer from "../Drawer/NewMessageDrawer";
+import BottomDrawer from "../../screens/Home/Chats/NewMessage";
 import { getAllProfiles } from "@/src/firebase/Services/Profile";
 import { ChatsContext } from "../../contexts/ChatsContext";
 import { RegistrationContext } from "@/src/contexts/RegistrationContext";
@@ -73,7 +73,7 @@ const ChatsHeader: React.FC<any> = () => {
       <TouchableOpacity
         onPress={() => navigation.dispatch(DrawerActions.toggleDrawer())}
       >
-        <Ionicons name="menu" size={24} color="blue" />
+        <Ionicons name="menu" size={30} color="blue" />
       </TouchableOpacity>
       <Text style={styles.title}>Chats</Text>
       <TouchableOpacity onPress={toggleDrawer}>

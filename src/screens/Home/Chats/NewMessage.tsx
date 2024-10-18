@@ -14,7 +14,7 @@ import Layout from "@/src/contexts/Layout";
 import { Chat } from "@/src/types/Message";
 import { RegistrationContext } from "@/src/contexts/RegistrationContext";
 import * as messageService from "@/src/firebase/Services/Message";
-import { showSuccessToast } from "../Toast/Toast";
+import { showSuccessToast } from "../../../components/Toast/Toast";
 
 interface BottomDrawerProps {
   isVisible: boolean;
@@ -35,6 +35,23 @@ const BottomDrawer: React.FC<BottomDrawerProps> = ({
   const createNewChat = useCallback(
     async (chat: Chat) => {
       try {
+        const chats = await messageService.getChats(userInfo?.userId || "");
+
+        // check if chat its not group chat and both userInfo.userId and other participant are in the chat
+        if (
+          !chat.isGroupChat &&
+          chats.some(
+            (c) =>
+              !c.isGroupChat &&
+              c.participants.includes(userInfo?.userId || "") &&
+              c.participants.includes(chat.chatId)
+          )
+        ) {
+          showSuccessToast("Cuộc trò chuyện đã tồn tại");
+          onClose();
+          return;
+        }
+
         await messageService.createNewChat(chat);
         showSuccessToast("Chat created successfully");
         onClose();
@@ -57,9 +74,9 @@ const BottomDrawer: React.FC<BottomDrawerProps> = ({
           .flatMap((chat) => chat.participants);
 
         // Lọc contacts chưa có trong danh sách chat
-        const filtered = contacts.filter(
-          (contact) => !chatIds.includes(contact.userId) && chatIds.length > 2
-        );
+        const filtered = contacts.filter((contact) => {
+          return true;
+        });
 
         setFilteredContacts(filtered);
       } catch (error) {

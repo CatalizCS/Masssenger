@@ -11,10 +11,15 @@ export type Profile = {
   friends: Profile[];
 };
 
-export type Badge = {
+export type Story = {
   id: string;
-  title: string;
-  color: string;
-  icon: string;
-  count: number;
+  imageUrl: string;
+  videoUrl: string;
+  postedAt: string;
+  expiresAt: string;
+};
+
+export type Stories = {
+  profileId: string;
+  stories: Story[];
 };
